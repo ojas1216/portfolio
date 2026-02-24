@@ -1,4 +1,4 @@
-name: CI-CD Portfolio Deployment
+name: Deploy Portfolio to Azure VM
 
 on:
   push:
@@ -10,24 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup SSH
+      - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VM_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to Azure VM
-  run: |
-    ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "
-      git config --global --add safe.directory /home/mario/portfolio &&
-      cd ~/portfolio &&
-      git pull origin main &&
-      sudo docker build -t portfolio . &&
-      sudo docker stop portfolio || true &&
-      sudo docker rm portfolio || true &&
-      sudo docker run -d -p 80:9090 --name portfolio portfolio
-    "
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            git config --global --add safe.directory /home/mario/portfolio
+            cd ~/portfolio
+            git pull origin main
+            sudo docker build -t portfolio .
+            sudo docker stop portfolio || true
+            sudo docker rm portfolio || true
+            sudo docker run -d -p 80:9090 --name portfolio portfolio
+          EOF
