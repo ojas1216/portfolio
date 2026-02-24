@@ -23,11 +23,16 @@ jobs:
       - name: Deploy to Azure VM
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            sudo chown -R mario:mario /home/mario/portfolio
+
             git config --global --add safe.directory /home/mario/portfolio
-            cd ~/portfolio
-            git pull origin main
-            sudo docker build -t portfolio .
+            cd /home/mario/portfolio
+
+            git fetch origin
+            git reset --hard origin/main
+
+            sudo docker build --no-cache -t portfolio .
             sudo docker stop portfolio || true
             sudo docker rm portfolio || true
-            sudo docker run -d -p 80:9090 --name portfolio portfolio
+            sudo docker run -d -p 80:80 --name portfolio portfolio
           EOF
